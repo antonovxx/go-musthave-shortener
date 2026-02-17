@@ -1,0 +1,43 @@
+package service
+
+import "math/rand"
+
+const (
+	idLength = 8
+	charset  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
+
+type Repository interface {
+	Save(id, originalUrl string)
+	Get(id string) (originalUrl string, ok bool)
+}
+
+type ShortenerService struct {
+	repository Repository
+}
+
+func NewShortenerService(repository Repository) *ShortenerService {
+	return &ShortenerService{
+		repository: repository,
+	}
+}
+
+func (s *ShortenerService) Shorten(originalUrl string) string {
+	id := generateId(idLength)
+	s.repository.Save(id, originalUrl)
+	return id
+}
+
+func (s *ShortenerService) Resolve(id string) (string, bool) {
+	return s.repository.Get(id)
+}
+
+func generateId(length int) string {
+	b := make([]byte, length)
+
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(b)
+}
