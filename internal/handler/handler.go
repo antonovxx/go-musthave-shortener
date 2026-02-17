@@ -35,7 +35,7 @@ func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s/%s", h.baseURL, id)
+	_, _ = fmt.Fprintf(w, "%s/%s", h.baseURL, id)
 }
 
 func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
