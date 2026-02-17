@@ -7,19 +7,19 @@ import (
 )
 
 type Service interface {
-	Shorten(originalUrl string) string
+	Shorten(originalURL string) string
 	Resolve(id string) (string, bool)
 }
 
 type URLHandler struct {
 	service Service
-	baseUrl string
+	baseURL string
 }
 
-func NewURLHandler(service Service, baseUrl string) *URLHandler {
+func NewURLHandler(service Service, baseURL string) *URLHandler {
 	return &URLHandler{
 		service: service,
-		baseUrl: baseUrl,
+		baseURL: baseURL,
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s/%s", h.baseUrl, id)
+	fmt.Fprintf(w, "%s/%s", h.baseURL, id)
 }
 
 func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {

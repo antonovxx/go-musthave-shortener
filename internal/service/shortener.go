@@ -9,7 +9,7 @@ const (
 
 type Repository interface {
 	Save(id, originalURL string)
-	Get(id string) (originalUrl string, ok bool)
+	Get(id string) (originalURL string, ok bool)
 }
 
 type ShortenerService struct {
