@@ -11,19 +11,19 @@ type Service interface {
 	Resolve(id string) (string, bool)
 }
 
-type UrlHandler struct {
+type URLHandler struct {
 	service Service
 	baseUrl string
 }
 
-func NewUrlHandler(service Service, baseUrl string) *UrlHandler {
-	return &UrlHandler{
+func NewURLHandler(service Service, baseUrl string) *URLHandler {
+	return &URLHandler{
 		service: service,
 		baseUrl: baseUrl,
 	}
 }
 
-func (h *UrlHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
@@ -38,7 +38,7 @@ func (h *UrlHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s/%s", h.baseUrl, id)
 }
 
-func (h *UrlHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	if id == "" {
@@ -46,13 +46,13 @@ func (h *UrlHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalUrl, ok := h.service.Resolve(id)
+	originalURL, ok := h.service.Resolve(id)
 
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Location", originalUrl)
+	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

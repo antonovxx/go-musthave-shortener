@@ -11,7 +11,7 @@ import (
 func main() {
 	repos := repository.NewURLRepository()
 	shortener := service.NewShortenerService(repos)
-	urlHandler := handler.NewUrlHandler(shortener, "http://localhost:8080")
+	urlHandler := handler.NewURLHandler(shortener, "http://localhost:8080")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /", urlHandler.HandlePost)

@@ -8,7 +8,7 @@ const (
 )
 
 type Repository interface {
-	Save(id, originalUrl string)
+	Save(id, originalURL string)
 	Get(id string) (originalUrl string, ok bool)
 }
 
@@ -22,9 +22,9 @@ func NewShortenerService(repository Repository) *ShortenerService {
 	}
 }
 
-func (s *ShortenerService) Shorten(originalUrl string) string {
-	id := generateId(idLength)
-	s.repository.Save(id, originalUrl)
+func (s *ShortenerService) Shorten(originalURL string) string {
+	id := generateID(idLength)
+	s.repository.Save(id, originalURL)
 	return id
 }
 
@@ -32,7 +32,7 @@ func (s *ShortenerService) Resolve(id string) (string, bool) {
 	return s.repository.Get(id)
 }
 
-func generateId(length int) string {
+func generateID(length int) string {
 	b := make([]byte, length)
 
 	for i := range b {
