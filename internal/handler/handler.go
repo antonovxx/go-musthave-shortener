@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Service interface {
@@ -26,6 +28,11 @@ func NewURLHandler(service Service, baseURL string) *URLHandler {
 func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
+	if len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -35,11 +42,16 @@ func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	_, _ = fmt.Fprintf(w, "%s/%s", h.baseURL, id)
+	_, err = fmt.Fprintf(w, "%s/%s", h.baseURL, id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 }
 
 func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	id := chi.URLParam(r, "id")
 
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)
