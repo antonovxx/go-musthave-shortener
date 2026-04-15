@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,12 +39,7 @@ func TestHandlePost_ValidValues_ExpectedSuccess(t *testing.T) {
 	h.HandlePost(writer, req)
 
 	result := writer.Result()
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-	}(result.Body)
+	defer result.Body.Close()
 
 	if result.StatusCode != http.StatusCreated {
 		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusCreated)
@@ -73,12 +67,7 @@ func TestHandlePost_BadRequest_ExpectedEmptyBody(t *testing.T) {
 	h.HandlePost(writer, req)
 
 	result := writer.Result()
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-	}(result.Body)
+	defer result.Body.Close()
 
 	if result.StatusCode != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
@@ -94,12 +83,7 @@ func TestHandleGet_IncorrectID_ExpectedBadRequest(t *testing.T) {
 	h.HandleGet(writer, req)
 
 	result := writer.Result()
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-	}(result.Body)
+	defer result.Body.Close()
 
 	if result.StatusCode != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
@@ -114,12 +98,7 @@ func TestHandleGet_IncorrectURL_ExpectedBadRequest(t *testing.T) {
 	h.HandleGet(writer, req)
 
 	result := writer.Result()
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			t.Error(err)
-		}
-	}(result.Body)
+	defer result.Body.Close()
 
 	if result.StatusCode != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
