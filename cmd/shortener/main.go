@@ -1,6 +1,7 @@
 package main
 
 import (
+	"antonovxx/go-musthave-shortener/internal/config"
 	"antonovxx/go-musthave-shortener/internal/handler"
 	"antonovxx/go-musthave-shortener/internal/repository"
 	"antonovxx/go-musthave-shortener/internal/service"
@@ -11,15 +12,17 @@ import (
 )
 
 func main() {
+	cfg := config.NewConfig()
+
 	repos := repository.NewURLRepository()
 	shortener := service.NewShortenerService(repos)
-	urlHandler := handler.NewURLHandler(shortener, "http://localhost:8080")
+	urlHandler := handler.NewURLHandler(shortener, cfg.BaseURL)
 
 	r := chi.NewRouter()
 	r.Post("/", urlHandler.HandlePost)
 	r.Get("/{id}", urlHandler.HandleGet)
 
-	log.Println("Starting server on :8080")
+	log.Printf("Starting server on %s\n", cfg.ServerAddress)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal(err)
