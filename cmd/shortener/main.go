@@ -24,7 +24,7 @@ func main() {
 
 	log.Printf("Starting server on %s\n", cfg.ServerAddress)
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(cfg.ServerAddress, r); err != nil {
 		log.Fatal(err)
 	}
 }
