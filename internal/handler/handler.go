@@ -3,54 +3,58 @@ package handler
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
+//go:generate mockgen -destination=mocks/mock_service.go -package=mocks . Service
 type Service interface {
-	Shorten(originalURL string) string
-	Resolve(id string) (string, bool)
+	Shorten(originalURL string) (string, error)
+	Resolve(id string) (string, error)
 }
 
 type URLHandler struct {
 	service Service
-	baseURL string
 }
 
-func NewURLHandler(service Service, baseURL string) *URLHandler {
+func NewURLHandler(service Service) *URLHandler {
 	return &URLHandler{
 		service: service,
-		baseURL: baseURL,
 	}
 }
 
-func (h *URLHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) HandleShortenURL(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if len(body) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	shortURL, err := h.service.Shorten(string(body))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	id := h.service.Shorten(string(body))
-
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	_, err = fmt.Fprintf(w, "%s/%s", h.baseURL, id)
 
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if _, err = fmt.Fprint(w, shortURL); err != nil {
+		log.Printf("failed to write response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) HandleExpandURL(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	if id == "" {
@@ -58,9 +62,9 @@ func (h *URLHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalURL, ok := h.service.Resolve(id)
+	originalURL, err := h.service.Resolve(id)
 
-	if !ok {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

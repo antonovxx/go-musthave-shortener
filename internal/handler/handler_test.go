@@ -1,42 +1,33 @@
 package handler
 
 import (
+	"antonovxx/go-musthave-shortener/internal/handler/mocks"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/mock/gomock"
 )
-
-type mockService struct {
-}
 
 const mockID = "mockID"
 const mockURL = "mockURL"
-const baseURL = "http://localhost:8080"
+const mockShortURL = "http://localhost:8080/" + mockID
 
-func (m *mockService) Shorten(url string) string {
-	return mockID
-}
+func TestHandleShortenURL_ValidValues_ExpectedSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+	mockService.EXPECT().Shorten(mockURL).Return(mockShortURL, nil)
 
-func (m *mockService) Resolve(id string) (string, bool) {
-	if id == mockID {
-		return mockURL, true
-	}
-
-	return "", false
-}
-
-func TestHandlePost_ValidValues_ExpectedSuccess(t *testing.T) {
-	h := NewURLHandler(&mockService{}, baseURL)
-
+	h := NewURLHandler(mockService)
 	body := strings.NewReader(mockURL)
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	writer := httptest.NewRecorder()
 
-	h.HandlePost(writer, req)
+	h.HandleShortenURL(writer, req)
 
 	result := writer.Result()
 	defer result.Body.Close()
@@ -59,12 +50,15 @@ func TestHandlePost_ValidValues_ExpectedSuccess(t *testing.T) {
 	}
 }
 
-func TestHandlePost_BadRequest_ExpectedEmptyBody(t *testing.T) {
-	h := NewURLHandler(&mockService{}, baseURL)
+func TestHandleShortenURL_BadRequest_ExpectedEmptyBody(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+
+	h := NewURLHandler(mockService)
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	writer := httptest.NewRecorder()
 
-	h.HandlePost(writer, req)
+	h.HandleShortenURL(writer, req)
 
 	result := writer.Result()
 	defer result.Body.Close()
@@ -74,13 +68,17 @@ func TestHandlePost_BadRequest_ExpectedEmptyBody(t *testing.T) {
 	}
 }
 
-func TestHandleGet_IncorrectID_ExpectedBadRequest(t *testing.T) {
-	h := NewURLHandler(&mockService{}, baseURL)
+func TestHandleExpandURL_IncorrectID_ExpectedBadRequest(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+	mockService.EXPECT().Resolve("unknown").Return("", errors.New("url not found"))
+
+	h := NewURLHandler(mockService)
 	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
 	req = withChiParam(req, "id", "unknown")
 	writer := httptest.NewRecorder()
 
-	h.HandleGet(writer, req)
+	h.HandleExpandURL(writer, req)
 
 	result := writer.Result()
 	defer result.Body.Close()
@@ -90,12 +88,15 @@ func TestHandleGet_IncorrectID_ExpectedBadRequest(t *testing.T) {
 	}
 }
 
-func TestHandleGet_IncorrectURL_ExpectedBadRequest(t *testing.T) {
-	h := NewURLHandler(&mockService{}, baseURL)
+func TestHandleExpandURL_IncorrectURL_ExpectedBadRequest(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+
+	h := NewURLHandler(mockService)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	writer := httptest.NewRecorder()
 
-	h.HandleGet(writer, req)
+	h.HandleExpandURL(writer, req)
 
 	result := writer.Result()
 	defer result.Body.Close()

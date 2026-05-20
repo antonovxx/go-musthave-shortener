@@ -1,6 +1,10 @@
 package service
 
-import "math/rand"
+import (
+	"errors"
+	"math/rand"
+	"net/url"
+)
 
 const (
 	idLength = 8
@@ -14,22 +18,37 @@ type Repository interface {
 
 type ShortenerService struct {
 	repository Repository
+	baseURL    string
 }
 
-func NewShortenerService(repository Repository) *ShortenerService {
+func NewShortenerService(repository Repository, baseURL string) *ShortenerService {
 	return &ShortenerService{
 		repository: repository,
+		baseURL:    baseURL,
 	}
 }
 
-func (s *ShortenerService) Shorten(originalURL string) string {
-	id := generateID(idLength)
+func (s *ShortenerService) Shorten(originalURL string) (string, error) {
+	var id string
+
+	for {
+		id = generateID(idLength)
+		if _, exists := s.repository.Get(id); !exists {
+			break
+		}
+	}
+
 	s.repository.Save(id, originalURL)
-	return id
+	return url.JoinPath(s.baseURL, id)
 }
 
-func (s *ShortenerService) Resolve(id string) (string, bool) {
-	return s.repository.Get(id)
+func (s *ShortenerService) Resolve(id string) (string, error) {
+	originalURL, ok := s.repository.Get(id)
+	if !ok {
+		return "", errors.New("not found")
+	}
+
+	return originalURL, nil
 }
 
 func generateID(length int) string {

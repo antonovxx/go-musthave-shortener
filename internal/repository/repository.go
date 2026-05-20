@@ -5,7 +5,7 @@ import (
 )
 
 type URLRepository struct {
-	mutex sync.RWMutex
+	mutex sync.Mutex
 	urls  map[string]string
 }
 
@@ -21,8 +21,8 @@ func (r *URLRepository) Save(id, originalURL string) {
 }
 
 func (r *URLRepository) Get(id string) (string, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	url, ok := r.urls[id]
 	return url, ok
