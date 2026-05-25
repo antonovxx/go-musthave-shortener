@@ -14,16 +14,22 @@ func NewURLRepository() *URLRepository {
 		urls: make(map[string]string)}
 }
 
-func (r *URLRepository) Save(id, originalURL string) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.urls[id] = originalURL
-}
-
 func (r *URLRepository) Get(id string) (string, bool) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	url, ok := r.urls[id]
 	return url, ok
+}
+
+func (r *URLRepository) SaveIfNotExists(id, originalURL string) bool {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if _, exists := r.urls[id]; exists {
+		return false
+	}
+
+	r.urls[id] = originalURL
+	return true
 }

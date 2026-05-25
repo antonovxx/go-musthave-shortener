@@ -1,6 +1,7 @@
 package service
 
 import (
+	_ "antonovxx/go-musthave-shortener/internal/repository"
 	"errors"
 	"math/rand"
 	"net/url"
@@ -12,7 +13,7 @@ const (
 )
 
 type Repository interface {
-	Save(id, originalURL string)
+	SaveIfNotExists(id, originalURL string) bool
 	Get(id string) (originalURL string, ok bool)
 }
 
@@ -29,22 +30,18 @@ func NewShortenerService(repository Repository, baseURL string) *ShortenerServic
 }
 
 func (s *ShortenerService) Shorten(originalURL string) (string, error) {
-	var id string
-
 	for {
-		id = generateID(idLength)
-		if _, exists := s.repository.Get(id); !exists {
-			break
+		id := generateID(idLength)
+		if s.repository.SaveIfNotExists(id, originalURL) {
+			return url.JoinPath(s.baseURL, id)
 		}
 	}
-
-	s.repository.Save(id, originalURL)
-	return url.JoinPath(s.baseURL, id)
 }
 
 func (s *ShortenerService) Resolve(id string) (string, error) {
 	originalURL, ok := s.repository.Get(id)
 	if !ok {
+
 		return "", errors.New("not found")
 	}
 
