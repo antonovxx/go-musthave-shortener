@@ -13,7 +13,11 @@ import (
 )
 
 func main() {
-	cfg := config.NewConfig()
+	cfg, err := config.NewConfig()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	repos := repository.NewURLRepository()
 	shortener := service.NewShortenerService(repos, cfg.BaseURL)

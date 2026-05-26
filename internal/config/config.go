@@ -1,13 +1,18 @@
 package config
 
-import "flag"
+import (
+	"flag"
+
+	"github.com/caarlos0/env/v11"
+	_ "github.com/caarlos0/env/v11"
+)
 
 type Config struct {
-	ServerAddress string
-	BaseURL       string
+	ServerAddress string `env:"SERVER_ADDRESS"`
+	BaseURL       string `env:"BASE_URL"`
 }
 
-func NewConfig() *Config {
+func NewConfig() (*Config, error) {
 	cfg := &Config{}
 
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
@@ -15,5 +20,9 @@ func NewConfig() *Config {
 
 	flag.Parse()
 
-	return cfg
+	if err := env.Parse(cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
