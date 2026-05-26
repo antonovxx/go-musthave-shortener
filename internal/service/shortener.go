@@ -8,13 +8,14 @@ import (
 )
 
 const (
-	idLength = 8
-	charset  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength            = 8
+	maxGenerateAttempts = 5
+	charset             = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 type Repository interface {
-	SaveIfNotExists(id, originalURL string) bool
-	Get(id string) (originalURL string, ok bool)
+	SaveIfNotExists(id, originalURL string) error
+	Get(id string) (originalURL string, err error)
 }
 
 type ShortenerService struct {
@@ -30,22 +31,17 @@ func NewShortenerService(repository Repository, baseURL string) *ShortenerServic
 }
 
 func (s *ShortenerService) Shorten(originalURL string) (string, error) {
-	for {
+	for range maxGenerateAttempts {
 		id := generateID(idLength)
-		if s.repository.SaveIfNotExists(id, originalURL) {
+		if err := s.repository.SaveIfNotExists(id, originalURL); err != nil {
 			return url.JoinPath(s.baseURL, id)
 		}
 	}
+	return "", errors.New("failed to generate unique id")
 }
 
 func (s *ShortenerService) Resolve(id string) (string, error) {
-	originalURL, ok := s.repository.Get(id)
-	if !ok {
-
-		return "", errors.New("not found")
-	}
-
-	return originalURL, nil
+	return s.repository.Get(id)
 }
 
 func generateID(length int) string {
