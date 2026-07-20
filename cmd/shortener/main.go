@@ -34,6 +34,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(logger))
 	r.Post("/", urlHandler.HandleShortenURL)
+	r.Post("/api/shorten", urlHandler.HandleShortenURLJSON)
 	r.Get("/{id}", urlHandler.HandleExpandURL)
 
 	logger.Info("Starting server", zap.String("address", cfg.ServerAddress))

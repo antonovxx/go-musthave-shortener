@@ -4,7 +4,6 @@ import (
 	"flag"
 
 	"github.com/caarlos0/env/v11"
-	_ "github.com/caarlos0/env/v11"
 )
 
 type Config struct {
