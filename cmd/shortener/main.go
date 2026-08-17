@@ -27,7 +27,12 @@ func main() {
 	}
 	defer logger.Sync()
 
-	repos := repository.NewURLRepository()
+	repos, err := repository.NewURLRepository(cfg.FileStoragePath)
+	if err != nil {
+		logger.Fatal("failed to init repository", zap.Error(err))
+	}
+	defer repos.Close()
+
 	shortener := service.NewShortenerService(repos, cfg.BaseURL)
 	urlHandler := handler.NewURLHandler(shortener)
 
