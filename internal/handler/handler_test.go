@@ -143,7 +143,6 @@ func TestHandleShortenURLJSON_ValidValues_ExpectedSuccess(t *testing.T) {
 func TestHandleShortenURLJSON_InvalidJSON_ExpectedBadRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockService := mocks.NewMockService(ctrl)
-	// Shorten не должен вызываться — EXPECT не задаём
 
 	h := NewURLHandler(mockService)
 	body := strings.NewReader(`not a json`)
@@ -158,24 +157,60 @@ func TestHandleShortenURLJSON_InvalidJSON_ExpectedBadRequest(t *testing.T) {
 	if result.StatusCode != http.StatusBadRequest {
 		t.Errorf("wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
 	}
+
+	assertJSONError(t, result, http.StatusBadRequest, "invalid request body")
 }
 
 func TestHandleShortenURLJSON_EmptyURL_ExpectedBadRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockService := mocks.NewMockService(ctrl)
-
 	h := NewURLHandler(mockService)
 	body := strings.NewReader(`{"url":""}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
 	writer := httptest.NewRecorder()
-
 	h.HandleShortenURLJSON(writer, req)
-
 	result := writer.Result()
 	defer result.Body.Close()
 
-	if result.StatusCode != http.StatusBadRequest {
-		t.Errorf("wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
+	assertJSONError(t, result, http.StatusBadRequest, "url is required")
+}
+
+func TestHandleShortenURLJSON_ShortenError_ExpectedInternalServerError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+
+	mockService.EXPECT().Shorten(mockURL).Return("", errors.New("failed to generate unique id"))
+
+	h := NewURLHandler(mockService)
+	body := strings.NewReader(`{"url":"mockURL"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
+	writer := httptest.NewRecorder()
+	h.HandleShortenURLJSON(writer, req)
+	result := writer.Result()
+	defer result.Body.Close()
+
+	assertJSONError(t, result, http.StatusInternalServerError, "failed to shorten url")
+}
+
+func assertJSONError(t *testing.T, result *http.Response, wantStatus int, wantMessage string) {
+	t.Helper()
+
+	if result.StatusCode != wantStatus {
+		t.Errorf("wrong status code: got %v want %v", result.StatusCode, wantStatus)
+	}
+
+	if ct := result.Header.Get("Content-Type"); ct != "application/json" {
+		t.Errorf("wrong content type: got %v want %v", ct, "application/json")
+	}
+
+	var resp errorResponse
+
+	if err := json.NewDecoder(result.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode error response: %v", err)
+	}
+
+	if resp.Error != wantMessage {
+		t.Errorf("wrong error message: got %v want %v", resp.Error, wantMessage)
 	}
 }
 

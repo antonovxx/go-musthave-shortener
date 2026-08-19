@@ -23,12 +23,12 @@ func NewURLRepository(filePath string) (*URLRepository, error) {
 		return repo, nil
 	}
 
-	urls, err := loadURLsFromFile(filePath)
+	urls, maxUUID, err := loadURLsFromFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 	repo.urls = urls
-	repo.nextUUID = len(urls) + 1
+	repo.nextUUID = maxUUID + 1
 
 	storage, err := newFileStorage(filePath)
 	if err != nil {

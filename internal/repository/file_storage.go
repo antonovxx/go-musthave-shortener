@@ -3,7 +3,9 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"os"
+	"strconv"
 )
 
 type urlRecord struct {
@@ -50,27 +52,36 @@ func (fs *fileStorage) close() error {
 	return fs.file.Close()
 }
 
-func loadURLsFromFile(path string) (map[string]string, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0o644)
-	if err != nil {
-		return nil, err
+func loadURLsFromFile(path string) (map[string]string, int, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0o644)
+	if errors.Is(err, os.ErrNotExist) {
+		return make(map[string]string), 0, nil
 	}
-	defer file.Close()
 
+	if err != nil {
+		return nil, 0, err
+	}
+
+	defer file.Close()
 	urls := make(map[string]string)
+	maxUUID := 0
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		var rec urlRecord
 		if err := json.Unmarshal(scanner.Bytes(), &rec); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
+
 		urls[rec.ShortURL] = rec.OriginalURL
+		if id, err := strconv.Atoi(rec.UUID); err == nil && id > maxUUID {
+			maxUUID = id
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return urls, nil
+	return urls, maxUUID, nil
 }

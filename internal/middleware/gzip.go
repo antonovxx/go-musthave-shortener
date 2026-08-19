@@ -13,9 +13,10 @@ var compressibleContentTypes = map[string]bool{
 }
 
 type compressWriter struct {
-	w        http.ResponseWriter
-	zw       *gzip.Writer
-	compress bool
+	w             http.ResponseWriter
+	zw            *gzip.Writer
+	compress      bool
+	headerWritten bool
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
@@ -27,19 +28,31 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
+	if !c.headerWritten {
+		c.WriteHeader(http.StatusOK)
+	}
+
 	if c.compress {
 		return c.zw.Write(p)
 	}
+
 	return c.w.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
+	if c.headerWritten {
+		return
+	}
+
+	c.headerWritten = true
 	contentType := c.w.Header().Get("Content-Type")
+
 	if statusCode < 300 && compressibleContentTypes[contentType] {
 		c.compress = true
 		c.zw = gzip.NewWriter(c.w)
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
+
 	c.w.WriteHeader(statusCode)
 }
 
