@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go build antonovxx/go-musthave-shortener/cmd/shortener" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+    <module name="go-musthave-shortener" />
+    <working_directory value="$PROJECT_DIR$" />
+    <envs>
+      <env name="DATABASE_DSN" value="postgres://postgres:pass@localhost:5433/shortener?sslmode=disable" />
+      <env name="SERVER_ADDRESS" value="localhost:8080" />
+      <env name="BASE_URL" value="http://localhost:8080" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="antonovxx/go-musthave-shortener/cmd/shortener" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>
