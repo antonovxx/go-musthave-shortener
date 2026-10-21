@@ -12,6 +12,7 @@ type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS"`
 	BaseURL         string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 func NewConfig() (*Config, error) {
@@ -22,6 +23,7 @@ func NewConfig() (*Config, error) {
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
 	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base URL")
 	flag.StringVar(&cfg.FileStoragePath, "f", defaultStoragePath, "file storage path")
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "database DSN")
 
 	flag.Parse()
 
