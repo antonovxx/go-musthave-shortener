@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"antonovxx/go-musthave-shortener/internal/model"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -25,6 +28,43 @@ func NewURLHandler(service Service) *URLHandler {
 	}
 }
 
+func (h *URLHandler) HandleShortenURLJSON(w http.ResponseWriter, r *http.Request) {
+	var req shortenRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.URL == "" {
+		writeJSONError(w, http.StatusBadRequest, "url is required")
+		return
+	}
+
+	shortenURL, err := h.service.Shorten(req.URL)
+
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "failed to shorten url")
+		return
+	}
+
+	resp := shortenResponse{Result: shortenURL}
+	respBody, err := json.Marshal(resp)
+
+	if err != nil {
+		log.Printf("failed to marshal shorten response: %v", err)
+		writeJSONError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if _, err := w.Write(respBody); err != nil {
+		log.Printf("failed to write response: %v", err)
+	}
+}
+
 func (h *URLHandler) HandleShortenURL(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
@@ -40,7 +80,7 @@ func (h *URLHandler) HandleShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	shortURL, err := h.service.Shorten(string(body))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -65,10 +105,32 @@ func (h *URLHandler) HandleExpandURL(w http.ResponseWriter, r *http.Request) {
 	originalURL, err := h.service.Resolve(id)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, model.ErrNotFound) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		log.Printf("failed to resolve url: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	body, err := json.Marshal(errorResponse{Error: message})
+
+	if err != nil {
+		log.Printf("failed to marshal error response: %v", err)
+		return
+	}
+
+	if _, err := w.Write(body); err != nil {
+		log.Printf("failed to write error response: %v", err)
+	}
 }

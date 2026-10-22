@@ -1,7 +1,9 @@
 package service
 
 import (
+	"antonovxx/go-musthave-shortener/internal/model"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/url"
 )
@@ -31,9 +33,17 @@ func NewShortenerService(repository Repository, baseURL string) *ShortenerServic
 
 func (s *ShortenerService) Shorten(originalURL string) (string, error) {
 	for range maxGenerateAttempts {
+
 		id := generateID(idLength)
-		if err := s.repository.SaveIfNotExists(id, originalURL); err == nil {
+
+		err := s.repository.SaveIfNotExists(id, originalURL)
+
+		if err == nil {
 			return url.JoinPath(s.baseURL, id)
+		}
+
+		if !errors.Is(err, model.ErrIDExists) {
+			return "", fmt.Errorf("save url: %w", err)
 		}
 	}
 	return "", errors.New("failed to generate unique id")
