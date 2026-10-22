@@ -8,7 +8,7 @@ import (
 func TestURLRepository_PersistsAndRestores(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "storage.json")
 
-	repo1, err := NewURLRepository(path)
+	repo1, err := NewFileRepository(path)
 	if err != nil {
 		t.Fatalf("failed to create repository: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestURLRepository_PersistsAndRestores(t *testing.T) {
 		t.Fatalf("failed to close: %v", err)
 	}
 
-	repo2, err := NewURLRepository(path)
+	repo2, err := NewFileRepository(path)
 	if err != nil {
 		t.Fatalf("failed to reopen repository: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestURLRepository_PersistsAndRestores(t *testing.T) {
 }
 
 func TestURLRepository_EmptyPath_InMemoryOnly(t *testing.T) {
-	repo, err := NewURLRepository("")
+	repo, err := NewFileRepository("")
 	if err != nil {
 		t.Fatalf("failed to create repository: %v", err)
 	}

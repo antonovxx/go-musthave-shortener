@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"antonovxx/go-musthave-shortener/internal/model"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -103,7 +105,14 @@ func (h *URLHandler) HandleExpandURL(w http.ResponseWriter, r *http.Request) {
 	originalURL, err := h.service.Resolve(id)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, model.ErrNotFound) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		log.Printf("failed to resolve url: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 

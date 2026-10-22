@@ -11,8 +11,6 @@ import (
 	"log"
 	"net/http"
 
-	_ "database/sql"
-
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -31,24 +29,32 @@ func main() {
 	}
 	defer logger.Sync()
 
-	repos, err := repository.NewURLRepository(cfg.FileStoragePath)
-	if err != nil {
-
-		logger.Fatal("failed to init repository", zap.Error(err))
-	}
-	defer repos.Close()
-
-	var db *sql.DB
-	var pinger handler.Pinger
+	var (
+		repos  service.Repository
+		pinger handler.Pinger
+	)
 
 	if cfg.DatabaseDSN != "" {
-		db, err = sql.Open("pgx", cfg.DatabaseDSN)
+		if err := repository.RunMigrations(cfg.DatabaseDSN); err != nil {
+			logger.Fatal("failed to run migrations", zap.Error(err))
+		}
+
+		db, err := sql.Open("pgx", cfg.DatabaseDSN)
 		if err != nil {
 			logger.Fatal("failed to open database", zap.Error(err))
 		}
-		pinger = db
-
 		defer db.Close()
+
+		repos = repository.NewPostgresRepository(db)
+		pinger = db
+	} else {
+		fileRepos, err := repository.NewFileRepository(cfg.FileStoragePath)
+		if err != nil {
+			logger.Fatal("failed to init repository", zap.Error(err))
+		}
+		defer fileRepos.Close()
+
+		repos = fileRepos
 	}
 
 	pingHandler := handler.NewPingHandler(pinger)

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"antonovxx/go-musthave-shortener/internal/handler/mocks"
+	"antonovxx/go-musthave-shortener/internal/model"
 	"context"
 	"encoding/json"
 	"errors"
@@ -72,7 +73,7 @@ func TestHandleShortenURL_BadRequest_ExpectedEmptyBody(t *testing.T) {
 func TestHandleExpandURL_IncorrectID_ExpectedBadRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockService := mocks.NewMockService(ctrl)
-	mockService.EXPECT().Resolve("unknown").Return("", errors.New("url not found"))
+	mockService.EXPECT().Resolve("unknown").Return("", model.ErrNotFound)
 
 	h := NewURLHandler(mockService)
 	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
@@ -86,6 +87,26 @@ func TestHandleExpandURL_IncorrectID_ExpectedBadRequest(t *testing.T) {
 
 	if result.StatusCode != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusBadRequest)
+	}
+}
+
+func TestHandleExpandURL_ServiceError_ExpectedInternalServerError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := mocks.NewMockService(ctrl)
+	mockService.EXPECT().Resolve("abc").Return("", errors.New("db is down"))
+
+	h := NewURLHandler(mockService)
+	req := httptest.NewRequest(http.MethodGet, "/abc", nil)
+	req = withChiParam(req, "id", "abc")
+	writer := httptest.NewRecorder()
+
+	h.HandleExpandURL(writer, req)
+
+	result := writer.Result()
+	defer result.Body.Close()
+
+	if result.StatusCode != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v", result.StatusCode, http.StatusInternalServerError)
 	}
 }
 

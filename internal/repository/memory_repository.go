@@ -1,20 +1,20 @@
 package repository
 
 import (
-	"errors"
+	"antonovxx/go-musthave-shortener/internal/model"
 	"strconv"
 	"sync"
 )
 
-type URLRepository struct {
+type FileRepository struct {
 	mutex    sync.Mutex
 	urls     map[string]string
 	storage  *fileStorage
 	nextUUID int
 }
 
-func NewURLRepository(filePath string) (*URLRepository, error) {
-	repo := &URLRepository{
+func NewFileRepository(filePath string) (*FileRepository, error) {
+	repo := &FileRepository{
 		urls:     make(map[string]string),
 		nextUUID: 1,
 	}
@@ -39,30 +39,30 @@ func NewURLRepository(filePath string) (*URLRepository, error) {
 	return repo, nil
 }
 
-func (r *URLRepository) Close() error {
+func (r *FileRepository) Close() error {
 	if r.storage == nil {
 		return nil
 	}
 	return r.storage.close()
 }
 
-func (r *URLRepository) Get(id string) (string, error) {
+func (r *FileRepository) Get(id string) (string, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	url, ok := r.urls[id]
 	if !ok {
-		return "", errors.New("url not found")
+		return "", model.ErrNotFound
 	}
 	return url, nil
 }
 
-func (r *URLRepository) SaveIfNotExists(id, originalURL string) error {
+func (r *FileRepository) SaveIfNotExists(id, originalURL string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	if _, exists := r.urls[id]; exists {
-		return errors.New("url already exists")
+		return model.ErrIDExists
 	}
 
 	r.urls[id] = originalURL
